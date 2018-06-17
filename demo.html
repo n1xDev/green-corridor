@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style>
+		body {
+			margin: 0px;
+		}
+		#CSAMap {
+			position: absolute;
+			height: 100%;
+			width: 100%;
+		}
+		div#control {
+			position: absolute;
+			top: 60px;
+			padding: 10px;
+			background-color: rgba(124, 176, 211, 0.6);
+		}
+		div#control p {
+			margin: 0 0 12px 0;
+			font-family: monospace;
+		}
+		div#control button {
+			border: none;
+			background-color: white;
+			cursor: pointer;
+			padding: 6px 12px;
+			width: 100%;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="CSAMap"></div>
+	<div id="control">
+		<p id="DisplayCoords"></p>
+		<button id="StopCoordsUpdater">Start / Stop</button>
+	</div>
+	<script>
+		var FullMap;
+		var CurrentPosition = {
+			lat: 55.794870,
+			lng: 49.121682
+		};
+		var AllMarkersCoords = [/*[55.794870, 49.121682], [55.794435, 49.125205]*/];
+		var AllMarkers = [];
+		var TmpPosition;
+		var CarPoints = [[55.793453, 49.121333], [55.794886, 49.121677], [55.794418, 49.125217], [55.794096, 49.128395]];
+		var CarID = -1;
+		var CarCurrentCoords = [55.793453, 49.121333];
+		var DoUpdateCoords = true;
+		var CarCurrentPoint = 0;
+		var CarCurrentSpeed = [0, 0];
+
+		function createMarker(CurrentCoords) {
+			TmpPosition = {
+				lat: CurrentCoords[0],
+				lng: CurrentCoords[1]
+			};
+			AllMarkers.push(new google.maps.Marker({
+				position: TmpPosition,
+				map: FullMap,
+				icon: {
+					path: google.maps.SymbolPath.CIRCLE,
+					scale: 8.5,
+					fillColor: "#F00",
+					fillOpacity: 0.4,
+					strokeWeight: 0.4
+				},
+			}));
+		}
+
+		function createCar(CarCoords) {
+			//https://cdn0.iconfinder.com/data/icons/healthcare-medical-1/512/medical_symbol-512.png
+			var icon = {
+				url: "https://cdn0.iconfinder.com/data/icons/healthcare-medical-1/512/medical_symbol-512.png", // url
+				scaledSize: new google.maps.Size(24, 24), // scaled size
+				origin: new google.maps.Point(0,0), // origin
+				anchor: new google.maps.Point(0, 0) // anchor
+			};
+			TmpPosition = {
+				lat: CarCoords[0],
+				lng: CarCoords[1]
+			};
+			AllMarkers.push(new google.maps.Marker({
+				position: TmpPosition,
+				map: FullMap,
+				icon: icon,
+			}));
+			CarCurrentCoords = CarCoords;
+			CarID = AllMarkers.length - 1;
+		}
+
+		function moveCar() {
+			/*console.log(AllMarkers);
+			AllMarkersCoords[CarID][1] += 0.0001;*/
+			//55.793949000000374 / 49.12139999999989
+			/*if(CarDriveStage == 0) {
+				CarCurrentCoords[0] += 0.00001;
+				CarCurrentCoords[1] += 0.000006;
+			}*/
+			if((CarCurrentCoords[0] >= CarPoints[CarCurrentPoint][0] - 0.00001 && 
+				CarCurrentCoords[0] <= CarPoints[CarCurrentPoint][0] + 0.00001) &&
+				(CarCurrentCoords[1] >= CarPoints[CarCurrentPoint][1] - 0.00001 && 
+				CarCurrentCoords[1] <= CarPoints[CarCurrentPoint][1] + 0.00001)) {
+				CarCurrentPoint++;
+				console.log("sasatb");
+				var dx = CarPoints[CarCurrentPoint][0] - CarCurrentCoords[0];
+				var dy = CarPoints[CarCurrentPoint][1] - CarCurrentCoords[1]; 
+				CarCurrentSpeed[0] = dx/Math.sqrt(dx*dx + dy*dy)/110000.0;
+				CarCurrentSpeed[1] = dy/Math.sqrt(dx*dx + dy*dy)/110000.0;
+				// CarCurrentSpeed[0] = dx/20.0;
+				// CarCurrentSpeed[1] = dy/20.0;
+			}
+			// var dx = CarPoints[1][0] - CarCurrentCoords[0];
+			// console.log(dx);
+			// var dy = CarPoints[1][1] - CarCurrentCoords[1];
+			// //CarCurrentSpeed[0] = dx/Math.sqrt(dx*dx + dy*dy);
+			// CarCurrentSpeed[0] = dx/20.0;
+			// console.log(CarCurrentSpeed[0]);
+			// //CarCurrentSpeed[1] = dy/Math.sqrt(dx*dx + dy*dy);
+			// CarCurrentSpeed[1] = dy/20.0;
+			// CarCurrentCoords[0]
+			// console.log(CarCurrentCoords[0]);
+			// console.log(CarCurrentCoords[1]);
+
+			if(DoUpdateCoords) {
+				CarCurrentCoords[0] += CarCurrentSpeed[0];
+				CarCurrentCoords[1] += CarCurrentSpeed[1];
+			}
+			AllMarkers[CarID].setPosition(new google.maps.LatLng(CarCurrentCoords[0], CarCurrentCoords[1]));
+			document.getElementById("DisplayCoords").innerHTML = CarCurrentCoords[0].toFixed(6) + " / " + CarCurrentCoords[1].toFixed(6);
+		}
+
+		function controlCar() {
+			if((CarCurrentCoords[1] > 49.1213 && CarDriveStage == 0)/*(CarCurrentCoords[0] == 55.793949000000374) && (CarCurrentCoords[1] == 49.12139999999989)*/) {
+				CarDriveStage = 1;
+			} else if((CarCurrentCoords[0] > 55.79498 && CarDriveStage == 1)) {
+				CarDriveStage = 2;
+				/*AllMarkers[0].setIcon({
+					path: google.maps.SymbolPath.CIRCLE,
+					scale: 8.5,
+					fillColor: "green",
+					fillOpacity: 0.4,
+					strokeWeight: 1
+				});*/
+			} else if((CarCurrentCoords[1] > 49.1217 && CarDriveStage == 2)) {
+				CarDriveStage = 3;
+				//55.79494900000069 / 49.121484999999815
+			}
+			//55.794872, 49.121698
+			console.log((CarCurrentCoords[0] - 55.794872).toString() + " / " + (CarCurrentCoords[1] - 49.121698).toString());
+			// 55.794849 (0)
+		}
+
+		function createDot(DotCoords) {
+			TmpPosition = {
+				lat: DotCoords[0],
+				lng: DotCoords[1]
+			};
+			AllMarkers.push(new google.maps.Marker({
+				position: TmpPosition,
+				map: FullMap,
+				icon: {
+					path: google.maps.SymbolPath.CIRCLE,
+					scale: 4.5,
+					fillColor: "gray",
+					fillOpacity: 0.4,
+					strokeWeight: 0.4
+				},
+			}));
+		}
+
+		function initMap() {
+			FullMap = new google.maps.Map(document.getElementById('CSAMap'), {
+				zoom: 16,
+				center: CurrentPosition
+			});
+
+			for(var i = 0; i < AllMarkersCoords.length; i++) {
+				createMarker(AllMarkersCoords[i]);
+			}
+
+			//colors
+
+			var directionsService = new google.maps.DirectionsService;
+			var directionsDisplay = new google.maps.DirectionsRenderer;
+
+			directionsDisplay.setMap(FullMap);
+
+			/*var onChangeHandler = function() {
+				calculateAndDisplayRoute(directionsService, directionsDisplay);
+			};
+
+			document.getElementById('give-me-route-btn').addEventListener('click', onChangeHandler);*/
+
+			function calculateAndDisplayRoute(directionsService, directionsDisplay) {
+				directionsService.route({
+					origin: {
+						lat: 55.792769,
+						lng: 49.120692
+					},
+					destination: {
+						lat: 55.794096,
+						lng: 49.128395
+					},
+					travelMode: 'DRIVING'
+				}, function(response, status) {
+					if (status === 'OK') {
+						directionsDisplay.setDirections(response);
+					} else {
+						window.alert('Ошибка: ' + status);
+					}
+				});
+			}
+
+			var j = 0;
+			var m = 0;
+
+			/*function allRed() {
+				//
+			}*/
+
+			function setTact1() {
+				if(j != 3)
+					j++;
+				else
+					j=0;
+				if(j == 1) {
+					for(var i = 1; i < 6; i++)
+					{
+						if(i == 3) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+				if(j == 2) {
+					for(var i = 1; i < 6; i++) {
+						if(i == 3 || i == 1) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+				if(j == 3) {
+					for(var i = 1; i < 6; i++) {
+						if(i == 1 || i == 2 || i == 5) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+			}
+			function setTact2() {////////////////////////////////////////////////////
+				if(m != 3)
+					m++;
+				else
+					m=0;
+				if(m == 2) {
+					for(var i = 6; i < 11; i++)
+					{
+						if(i == 8) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+				if(m == 3) {
+					for(var i = 6; i < 11; i++) {
+						if(i == 8 || i == 6) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+				if(m == 1) {
+					for(var i = 6; i < 11; i++) {
+						if(i == 6 || i == 7 || i == 10) {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "green",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						} else {
+							AllMarkers[i].setIcon({
+								path: google.maps.SymbolPath.CIRCLE,
+								scale: 8.5,
+								fillColor: "red",
+								fillOpacity: 0.4,
+								strokeWeight: 1
+							});
+						}
+					}
+				}
+				/*for(var i = 0; i < 2; i++) {
+					//55.794854, 49.121710
+					for(0.0006 > Math.sqrt((CarCurrentCoords[0]-55.794854)*
+										   (CarCurrentCoords[0]-55.794854) + 
+										   (CarCurrentCoords[1]-49.121710)*
+										   (CarCurrentCoords[1]-49.121710) ) ) {
+						//
+					}
+					for(0.0006 > Math.sqrt((CarCurrentCoords[0]-55.794413)*
+										   (CarCurrentCoords[0]-55.794413) + 
+										   (CarCurrentCoords[1]-49.125172)*
+										   (CarCurrentCoords[1]-49.125172) ) ) {
+						//
+					}
+				}*/
+			}
+
+			createCar([55.793453, 49.121333]);
+			calculateAndDisplayRoute(directionsService, directionsDisplay);
+
+			setInterval(moveCar, 50);
+			//setInterval(controlCar, 100);
+
+			var setTact1IntervalID = setInterval(setTact1, 5000);
+			var setTact2IntervalID = setInterval(setTact2, 5000);
+
+			console.log("[1] The first dot: " + AllMarkers.length.toString());
+			createDot([55.794852, 49.121626]);
+			createDot([55.794843, 49.121725]);
+			createDot([55.794858, 49.121791]);
+			createDot([55.794894, 49.121735]);
+			createDot([55.794903, 49.121658]);
+			console.log("[1] The last dot: " + (AllMarkers.length - 1).toString());
+			//next
+			console.log("[2] The first dot: " + AllMarkers.length.toString());
+			createDot([55.794400, 49.125108]);
+			createDot([55.794377, 49.125261]);
+			createDot([55.794409, 49.125315]);
+			createDot([55.794466, 49.125288]);
+			createDot([55.794479, 49.125129]);
+			console.log("[2] The last dot: " + (AllMarkers.length - 1).toString());
+
+			setTimeout(function() {
+				AllMarkers[2].setIcon({
+					path: google.maps.SymbolPath.CIRCLE,
+					scale: 8.5,
+					fillColor: "green",
+					fillOpacity: 0.4,
+					strokeWeight: 1
+				});
+			}, 6500);
+
+			/*setTimeout(to_yellow, 5000);
+			setTimeout(to_green, 7000);
+			setTimeout(to_yellow, 9000);
+			setTimeout(to_red, 12000);*/
+		}
+
+		document.getElementById("StopCoordsUpdater").onclick = function() {
+			if (DoUpdateCoords) {
+				DoUpdateCoords = false;
+			} else {
+				DoUpdateCoords = true;
+			}
+		};
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDEN6exjfNfHBB9Y-rN_wAQRJdEp9gWARE&callback=initMap"></script>
+</body>
+
+</html>

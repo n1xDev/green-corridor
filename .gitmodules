@@ -1,0 +1,3 @@
+[submodule "anblick"]
+	path = anblick
+	url = git@github.com:n1xDev/anblick.git
